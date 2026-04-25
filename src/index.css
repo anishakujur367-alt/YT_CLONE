@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-yt-black text-white antialiased transition-colors duration-200;
+  }
+}
+
+
+body.light-mode {
+  background-color: #ffffff !important;
+  color: #0f0f0f !important;
+}
+
+body.light-mode .bg-\[\#0f0f0f\] { background-color: #ffffff !important; }
+body.light-mode .bg-yt-black { background-color: #ffffff !important; }
+body.light-mode .bg-yt-black\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
+body.light-mode .bg-yt-gray { background-color: #f2f2f2 !important; }
+body.light-mode .bg-yt-gray\/50 { background-color: rgba(242, 242, 242, 0.5) !important; }
+body.light-mode .bg-yt-gray\/80 { background-color: rgba(242, 242, 242, 0.8) !important; }
+body.light-mode .bg-\[\#212121\] { background-color: #ffffff !important; border-color: #e5e5e5 !important; }
+body.light-mode .bg-\[\#121212\] { background-color: #ffffff !important; border-color: #cccccc !important; }
+body.light-mode .bg-\[\#181818\] { background-color: #f8f8f8 !important; border-color: #cccccc !important; }
+body.light-mode .bg-\[\#272727\] { background-color: #f2f2f2 !important; }
+
+body.light-mode .text-white { color: #0f0f0f !important; }
+body.light-mode .text-white\/90 { color: rgba(15, 15, 15, 0.9) !important; }
+body.light-mode .text-yt-lightgray { color: #606060 !important; }
+body.light-mode .text-gray-200 { color: #303030 !important; }
+body.light-mode .text-gray-400 { color: #606060 !important; }
+
+body.light-mode .border-yt-gray { border-color: #e5e5e5 !important; }
+body.light-mode .border-\[\#3f3f3f\] { border-color: #cccccc !important; }
+
+body.light-mode .hover\:bg-yt-gray:hover { background-color: #e5e5e5 !important; }
+body.light-mode .hover\:bg-\[\#3f3f3f\]:hover { background-color: #e5e5e5 !important; }
+body.light-mode .hover\:text-white:hover { color: #000000 !important; }
+
+
+body.light-mode .bg-white.text-black { background-color: #0f0f0f !important; color: #ffffff !important; }
+body.light-mode .bg-white.text-black:hover { background-color: #272727 !important; }
+body.light-mode .bg-transparent.text-white.border-white { color: #0f0f0f !important; border-color: #0f0f0f !important; }
+
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #717171;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
