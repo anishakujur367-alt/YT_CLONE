@@ -13,9 +13,9 @@ const VideoCard = ({ video }) => {
     e.preventDefault();
     e.stopPropagation();
     if (isSaved) {
-      removeFromWatchLater(video.id);
+    removeFromWatchLater(video.id);
     } else {
-      addToWatchLater({
+    addToWatchLater({
         id: video.id,
         title: video.title,
         channel: video.channel,
