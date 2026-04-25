@@ -1,120 +1,141 @@
-import { Link } from 'react-router-dom';
-import { Clock, X, MoreVertical, CheckCheck } from 'lucide-react';
-import { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { createContext, useContext, useState } from 'react';
 
-const VideoCard = ({ video }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const { addToWatchLater, removeFromWatchLater, isInWatchLater } = useAppContext();
-  const isSaved = isInWatchLater(video.id);
+const AppContext = createContext(null);
 
-  const handleWatchLater = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isSaved) {
-    removeFromWatchLater(video.id);
-    } else {
-    addToWatchLater({
-        id: video.id,
-        title: video.title,
-        channel: video.channel,
-        thumbnail: video.thumbnail,
-        profilePic: video.profilePic,
-        views: video.views,
-        duration: video.duration,
-        uploadedAt: video.uploadedAt,
-      });
+export const useAppContext = () => useContext(AppContext);
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
-    }
-    setMenuOpen(false);
+const GUEST = { name: 'Guest', email: 'guest@youtube.com' };
+
+export const AppProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_user')) || null; } catch { return null; }
+  });
+  const [watchLater, setWatchLater] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_watchlater')) || []; } catch { return []; }
+  });
+  const [watchHistory, setWatchHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_history')) || []; } catch { return []; }
+  });
+  const [likedVideos, setLikedVideos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_liked')) || []; } catch { return []; }
+  });
+  const [downloadedVideos, setDownloadedVideos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_downloads')) || []; } catch { return []; }
+  });
+  const [subscribedChannels, setSubscribedChannels] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('yt_subscriptions')) || []; } catch { return []; }
+  });
+
+  const persist = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+  // Auth
+  const signup = (name, email, password) => {
+    const users = JSON.parse(localStorage.getItem('yt_users') || '[]');
+    if (users.find(u => u.email === email)) return { success: false, error: 'Email already registered' };
+    const user = { name, email, password };
+    users.push(user);
+    localStorage.setItem('yt_users', JSON.stringify(users));
+    const session = { name, email };
+    setCurrentUser(session);
+    persist('yt_user', session);
+    return { success: true };
   };
 
+  const login = (email, password) => {
+    if (email === 'guest@youtube.com' && password === 'guest') {
+      setCurrentUser(GUEST);
+      persist('yt_user', GUEST);
+      return { success: true };
+    }
+    const users = JSON.parse(localStorage.getItem('yt_users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) return { success: false, error: 'Invalid email or password' };
+    const session = { name: user.name, email: user.email };
+    setCurrentUser(session);
+    persist('yt_user', session);
+    return { success: true };
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('yt_user');
+  };
+
+  // Watch Later
+  const addToWatchLater = (video) => {
+    setWatchLater(prev => {
+      if (prev.find(v => v.id === video.id)) return prev;
+      const next = [video, ...prev];
+      persist('yt_watchlater', next);
+      return next;
+    });
+  };
+  const removeFromWatchLater = (id) => {
+    setWatchLater(prev => { const next = prev.filter(v => v.id !== id); persist('yt_watchlater', next); return next; });
+  };
+  const isInWatchLater = (id) => watchLater.some(v => v.id === id);
+
+  // History
+  const addToHistory = (video) => {
+    setWatchHistory(prev => {
+      const filtered = prev.filter(v => !(v.id === video.id && v.type === video.type));
+      const next = [{ ...video, watchedAt: new Date().toISOString() }, ...filtered].slice(0, 200);
+      persist('yt_history', next);
+      return next;
+    });
+  };
+  const removeFromHistory = (id) => {
+    setWatchHistory(prev => { const next = prev.filter(v => v.id !== id); persist('yt_history', next); return next; });
+  };
+  const clearHistory = () => { setWatchHistory([]); localStorage.removeItem('yt_history'); };
+
+  // Liked
+  const toggleLike = (video) => {
+    setLikedVideos(prev => {
+      const exists = prev.find(v => v.id === video.id);
+      const next = exists ? prev.filter(v => v.id !== video.id) : [{ ...video, likedAt: new Date().toISOString() }, ...prev];
+      persist('yt_liked', next);
+      return next;
+    });
+  };
+  const isLiked = (id) => likedVideos.some(v => v.id === id);
+  const clearLiked = () => { setLikedVideos([]); localStorage.removeItem('yt_liked'); };
+
+  // Downloads
+  const addDownload = (video) => {
+    setDownloadedVideos(prev => {
+      if (prev.find(v => v.id === video.id)) return prev;
+      const next = [video, ...prev];
+      persist('yt_downloads', next);
+      return next;
+    });
+  };
+  const removeDownload = (id) => {
+    setDownloadedVideos(prev => { const next = prev.filter(v => v.id !== id); persist('yt_downloads', next); return next; });
+  };
+  const isDownloaded = (id) => downloadedVideos.some(v => v.id === id);
+
+  // Subscriptions
+  const toggleSubscription = (channel) => {
+    setSubscribedChannels(prev => {
+      const exists = prev.find(c => c.name === channel.name);
+      const next = exists ? prev.filter(c => c.name !== channel.name) : [...prev, channel];
+      persist('yt_subscriptions', next);
+      return next;
+    });
+  };
+  const isSubscribedTo = (name) => subscribedChannels.some(c => c.name === name);
+
   return (
-    <div className="flex flex-col gap-3 group cursor-pointer relative">
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden">
-        <Link to={`/watch/${video.id}`}>
-          <img
-            src={video.thumbnail}
-            alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-          <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
-            {video.duration}
-          </div>
-        </Link>
-
-        <button
-          onClick={handleWatchLater}
-          title={isSaved ? 'Remove from Watch Later' : 'Save to Watch Later'}
-          className={`absolute top-2 right-2 p-1.5 rounded-full transition-all duration-200
-            ${isSaved
-              ? 'bg-white/90 text-black opacity-100'
-              : 'bg-black/70 text-white opacity-0 group-hover:opacity-100 hover:bg-black'
-            }`}
-        >
-          {saved ? (
-            <CheckCheck size={16} className="text-green-500" />
-          ) : isSaved ? (
-            <X size={16} />
-          ) : (
-            <Clock size={16} />
-          )}
-        </button>
-      </div>
-      <div className="flex gap-3 items-start">
-        <Link to="/" className="flex-shrink-0">
-          <img
-            src={video.profilePic}
-            alt={video.channel}
-            className="w-9 h-9 rounded-full object-cover"
-          />
-        </Link>
-        <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-          <Link to={`/watch/${video.id}`}>
-            <h3 className="text-base font-medium text-white line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">
-              {video.title}
-            </h3>
-          </Link>
-          <Link to="/" className="text-sm text-yt-lightgray mt-1 hover:text-white transition-colors truncate">
-            {video.channel}
-          </Link>
-          <div className="text-sm text-yt-lightgray flex items-center gap-1">
-            <span>{video.views}</span>
-            <span className="text-[10px]">•</span>
-            <span>{video.uploadedAt}</span>
-          </div>
-        </div>
-
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-            className="p-1 rounded-full hover:bg-yt-gray transition-colors opacity-0 group-hover:opacity-100"
-          >
-            <MoreVertical size={18} />
-          </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-full mt-1 w-56 bg-[#272727] border border-[#3f3f3f] rounded-xl shadow-2xl py-2 z-50">
-                <button
-                  onClick={handleWatchLater}
-                  className="w-full text-left px-4 py-2.5 hover:bg-[#3f3f3f] text-sm flex items-center gap-3 transition-colors"
-                >
-                  {isSaved
-                    ? <><X size={16} /> Remove from Watch Later</>
-                    : <><Clock size={16} /> Save to Watch Later</>
-                  }
-                </button>
-            </div>
-            </>
-        )}
-        </div>
-    </div>
-    </div>
-);
+    <AppContext.Provider value={{
+      currentUser, signup, login, logout,
+      watchLater, addToWatchLater, removeFromWatchLater, isInWatchLater,
+      watchHistory, addToHistory, removeFromHistory, clearHistory,
+      likedVideos, toggleLike, isLiked, clearLiked,
+      downloadedVideos, addDownload, removeDownload, isDownloaded,
+      subscribedChannels, toggleSubscription, isSubscribedTo,
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
 };
-
-export default VideoCard;

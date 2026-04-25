@@ -1,6 +1,20 @@
+/** @type {import('tailwindcss').Config} */
 export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        yt: {
+          black: '#0f0f0f',
+          gray: '#272727',
+          lightgray: '#aaaaaa',
+          red: '#ff0000',
+        }
+      }
+    },
   },
+  plugins: [],
 }
